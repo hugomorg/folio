@@ -37,6 +37,12 @@ defmodule FolioTest do
       stream = Folio.page(TestRepo, Superhero, mode: :cursor, batch_size: 2)
       assert get_results(stream) == Enum.chunk_every(people, 2)
     end
+
+    test "cursor-based pagination - order_by option", %{people: people} do
+      stream = Folio.page(TestRepo, Superhero, mode: :cursor, order_by: :last_name)
+      assert [results] = get_results(stream)
+      assert results == Enum.sort_by(people, & &1.last_name)
+    end
   end
 
   describe "mode - offset" do

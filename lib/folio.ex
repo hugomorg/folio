@@ -32,11 +32,10 @@ defmodule Folio do
 
     cursor =
       Map.get_lazy(opts, :cursor, fn ->
-        # Not robust: fix later
-        (schema |> select([el], min(field(el, ^order_by))) |> repo.one!) - 1
+        schema |> select([el], min(field(el, ^order_by))) |> repo.one!
       end)
 
-    %{batch_size: batch_size, mode: :cursor, order_by: order_by, cursor: cursor}
+    %{batch_size: batch_size, mode: :cursor, order_by: order_by, cursor: cursor, first: true}
   end
 
   defp create_stream(repo, schema, initial_params) do
@@ -63,6 +62,21 @@ defmodule Folio do
     schema |> limit(^batch_size) |> offset(^offset) |> order_by(^order_by)
   end
 
+  #  This is the first query, and so should include the start cursor
+  # but subsequent pages should fetch after the cursor (exclusive)
+  defp build_query(schema, %{
+         mode: :cursor,
+         batch_size: batch_size,
+         order_by: order_by,
+         cursor: cursor,
+         first: true
+       }) do
+    schema
+    |> limit(^batch_size)
+    |> where([el], field(el, ^order_by) >= ^cursor)
+    |> order_by(^order_by)
+  end
+
   defp build_query(schema, %{
          mode: :cursor,
          batch_size: batch_size,
@@ -77,6 +91,10 @@ defmodule Folio do
 
   defp build_next_params(_results, params = %{mode: :offset}) do
     Map.update!(params, :offset, &(&1 + params.batch_size))
+  end
+
+  defp build_next_params(results, params = %{mode: :cursor, first: true}) do
+    build_next_params(results, Map.delete(params, :first))
   end
 
   defp build_next_params(results, params = %{mode: :cursor, order_by: order_by}) do
