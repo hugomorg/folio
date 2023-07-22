@@ -16,30 +16,45 @@ defmodule FolioTest do
 
   setup do
     TestRepo.insert_all(Superhero, @people)
-    sorted_by_id = Superhero |> order_by(:id) |> TestRepo.all()
+
+    sorted_by_id =
+      Superhero
+      |> order_by(:id)
+      |> select([sh], map(sh, [:first_name, :last_name, :alternate_selves]))
+      |> TestRepo.all()
+
     %{people: sorted_by_id}
   end
 
   test "offset based pagination - defaults", %{people: people} do
     stream = Folio.page(TestRepo, Superhero, mode: :offset)
-    assert [results] = Enum.to_list(stream)
+    assert [results] = get_results(stream)
     assert results == people
   end
 
   test "offset based pagination - batch_size option", %{people: people} do
     stream = Folio.page(TestRepo, Superhero, mode: :offset, batch_size: 2)
-    assert Enum.to_list(stream) == Enum.chunk_every(people, 2)
+    assert get_results(stream) == Enum.chunk_every(people, 2)
   end
 
   test "offset based pagination - offset option", %{people: people} do
     stream = Folio.page(TestRepo, Superhero, mode: :offset, offset: length(people) - 1)
-    assert [results] = Enum.to_list(stream)
+    assert [results] = get_results(stream)
     assert results == [List.last(people)]
   end
 
   test "offset based pagination - order_by option", %{people: people} do
     stream = Folio.page(TestRepo, Superhero, mode: :offset, order_by: :last_name)
-    assert [results] = Enum.to_list(stream)
+    assert [results] = get_results(stream)
     assert results == Enum.sort_by(people, & &1.last_name)
+  end
+
+  # For easier comparison
+  defp get_results(stream) do
+    Enum.map(stream, fn page ->
+      Enum.map(page, fn result ->
+        result |> Map.from_struct() |> Map.drop([:id, :__meta__])
+      end)
+    end)
   end
 end
