@@ -26,27 +26,29 @@ defmodule FolioTest do
     %{people: sorted_by_id}
   end
 
-  test "offset based pagination - defaults", %{people: people} do
-    stream = Folio.page(TestRepo, Superhero, mode: :offset)
-    assert [results] = get_results(stream)
-    assert results == people
-  end
+  describe "mode - offset" do
+    test "offset based pagination - defaults", %{people: people} do
+      stream = Folio.page(TestRepo, Superhero, mode: :offset)
+      assert [results] = get_results(stream)
+      assert results == people
+    end
 
-  test "offset based pagination - batch_size option", %{people: people} do
-    stream = Folio.page(TestRepo, Superhero, mode: :offset, batch_size: 2)
-    assert get_results(stream) == Enum.chunk_every(people, 2)
-  end
+    test "offset based pagination - batch_size option", %{people: people} do
+      stream = Folio.page(TestRepo, Superhero, mode: :offset, batch_size: 2)
+      assert get_results(stream) == Enum.chunk_every(people, 2)
+    end
 
-  test "offset based pagination - offset option", %{people: people} do
-    stream = Folio.page(TestRepo, Superhero, mode: :offset, offset: length(people) - 1)
-    assert [results] = get_results(stream)
-    assert results == [List.last(people)]
-  end
+    test "offset based pagination - offset option", %{people: people} do
+      stream = Folio.page(TestRepo, Superhero, mode: :offset, offset: length(people) - 1)
+      assert [results] = get_results(stream)
+      assert results == [List.last(people)]
+    end
 
-  test "offset based pagination - order_by option", %{people: people} do
-    stream = Folio.page(TestRepo, Superhero, mode: :offset, order_by: :last_name)
-    assert [results] = get_results(stream)
-    assert results == Enum.sort_by(people, & &1.last_name)
+    test "offset based pagination - order_by option", %{people: people} do
+      stream = Folio.page(TestRepo, Superhero, mode: :offset, order_by: :last_name)
+      assert [results] = get_results(stream)
+      assert results == Enum.sort_by(people, & &1.last_name)
+    end
   end
 
   # For easier comparison
