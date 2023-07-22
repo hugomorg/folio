@@ -29,4 +29,9 @@ defmodule FolioTest do
     assert stream = Folio.page(TestRepo, Superhero, mode: :offset, batch_size: 2)
     assert Enum.to_list(stream) == Enum.chunk_every(people, 2)
   end
+
+  test "offset based pagination - offset option", %{people: people} do
+    assert stream = Folio.page(TestRepo, Superhero, mode: :offset, offset: length(people) - 1)
+    assert Enum.to_list(stream) == [[List.last(people)]]
+  end
 end

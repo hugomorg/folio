@@ -18,7 +18,7 @@ defmodule Folio do
   defp build_opts(opts, :offset) do
     batch_size = Keyword.get(opts, :batch_size, 100)
     offset = Keyword.get(opts, :offset, 0)
-    %{batch_size: batch_size, offset: 0, mode: :offset}
+    %{batch_size: batch_size, offset: offset, mode: :offset}
   end
 
   defp create_stream(repo, schema, initial_params) do
