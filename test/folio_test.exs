@@ -34,4 +34,10 @@ defmodule FolioTest do
     assert stream = Folio.page(TestRepo, Superhero, mode: :offset, offset: length(people) - 1)
     assert Enum.to_list(stream) == [[List.last(people)]]
   end
+
+  test "offset based pagination - order_by option", %{people: people} do
+    assert stream = Folio.page(TestRepo, Superhero, mode: :offset, order_by: :last_name)
+    [people] = Enum.to_list(stream)
+    assert Enum.to_list(stream) == [Enum.sort_by(people, & &1.last_name)]
+  end
 end
