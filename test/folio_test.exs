@@ -24,4 +24,9 @@ defmodule FolioTest do
     assert stream = Folio.page(TestRepo, Superhero, mode: :offset)
     assert Enum.to_list(stream) == [people]
   end
+
+  test "offset based pagination - batch_size option", %{people: people} do
+    assert stream = Folio.page(TestRepo, Superhero, mode: :offset, batch_size: 2)
+    assert Enum.to_list(stream) == Enum.chunk_every(people, 2)
+  end
 end
