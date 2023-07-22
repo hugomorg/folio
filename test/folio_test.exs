@@ -32,6 +32,11 @@ defmodule FolioTest do
       assert [results] = get_results(stream)
       assert results == people
     end
+
+    test "cursor-based pagination - batch_size option", %{people: people} do
+      stream = Folio.page(TestRepo, Superhero, mode: :cursor, batch_size: 2)
+      assert get_results(stream) == Enum.chunk_every(people, 2)
+    end
   end
 
   describe "mode - offset" do
