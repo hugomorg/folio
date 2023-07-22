@@ -26,6 +26,14 @@ defmodule FolioTest do
     %{people: sorted_by_id}
   end
 
+  describe "mode - cursor" do
+    test "cursor-based pagination - defaults", %{people: people} do
+      stream = Folio.page(TestRepo, Superhero, mode: :cursor)
+      assert [results] = get_results(stream)
+      assert results == people
+    end
+  end
+
   describe "mode - offset" do
     test "offset based pagination - defaults", %{people: people} do
       stream = Folio.page(TestRepo, Superhero, mode: :offset)
