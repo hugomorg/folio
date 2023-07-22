@@ -21,23 +21,25 @@ defmodule FolioTest do
   end
 
   test "offset based pagination - defaults", %{people: people} do
-    assert stream = Folio.page(TestRepo, Superhero, mode: :offset)
-    assert Enum.to_list(stream) == [people]
+    stream = Folio.page(TestRepo, Superhero, mode: :offset)
+    assert [results] = Enum.to_list(stream)
+    assert results == people
   end
 
   test "offset based pagination - batch_size option", %{people: people} do
-    assert stream = Folio.page(TestRepo, Superhero, mode: :offset, batch_size: 2)
+    stream = Folio.page(TestRepo, Superhero, mode: :offset, batch_size: 2)
     assert Enum.to_list(stream) == Enum.chunk_every(people, 2)
   end
 
   test "offset based pagination - offset option", %{people: people} do
-    assert stream = Folio.page(TestRepo, Superhero, mode: :offset, offset: length(people) - 1)
-    assert Enum.to_list(stream) == [[List.last(people)]]
+    stream = Folio.page(TestRepo, Superhero, mode: :offset, offset: length(people) - 1)
+    assert [results] = Enum.to_list(stream)
+    assert results == [List.last(people)]
   end
 
   test "offset based pagination - order_by option", %{people: people} do
-    assert stream = Folio.page(TestRepo, Superhero, mode: :offset, order_by: :last_name)
-    [people] = Enum.to_list(stream)
-    assert Enum.to_list(stream) == [Enum.sort_by(people, & &1.last_name)]
+    stream = Folio.page(TestRepo, Superhero, mode: :offset, order_by: :last_name)
+    assert [results] = Enum.to_list(stream)
+    assert results == Enum.sort_by(people, & &1.last_name)
   end
 end
