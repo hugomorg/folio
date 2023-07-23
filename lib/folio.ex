@@ -112,34 +112,38 @@ defmodule Folio do
            order_by: [_ | _] = order_by
          }
        ) do
-    {_, d} =
+    {_, dynamic_query} =
       order_by
       |> Enum.zip(cursor)
-      |> Enum.reduce({[], dynamic(true)}, fn
-        {field, cursor}, {prev_pairs, d} ->
-          matching_fields_query =
-            Enum.reduce(prev_pairs, dynamic(true), fn {field, cursor}, d ->
-              field =
-                case field do
-                  {_direction, field} -> field
-                  field -> field
-                end
+      |> Enum.reduce({[], dynamic(true)}, &build_multi_cursor_query(&1, &2, opts[:first]))
 
-              dynamic([el], ^d and field(el, ^field) == ^cursor)
-            end)
+    where(query, ^dynamic_query)
+  end
 
-          latest_field_comparison =
-            field_cursor_comparison(dynamic(true), field, cursor, opts[:first])
-
-          this_field_comparison = dynamic(^matching_fields_query and ^latest_field_comparison)
-
-          case prev_pairs do
-            [] -> {[{field, cursor} | prev_pairs], dynamic(^this_field_comparison)}
-            _ -> {[{field, cursor} | prev_pairs], dynamic(^d or ^this_field_comparison)}
+  defp build_multi_cursor_query({field, cursor}, {prev_cursor_field_pairs, dynamic_query}, first) do
+    matching_fields_query =
+      Enum.reduce(prev_cursor_field_pairs, dynamic(true), fn {field, cursor}, dynamic_query ->
+        field =
+          case field do
+            {_direction, field} -> field
+            field -> field
           end
+
+        dynamic([el], ^dynamic_query and field(el, ^field) == ^cursor)
       end)
 
-    where(query, ^d)
+    latest_field_comparison = field_cursor_comparison(dynamic(true), field, cursor, first)
+
+    this_field_comparison = dynamic(^matching_fields_query and ^latest_field_comparison)
+
+    case prev_cursor_field_pairs do
+      [] ->
+        {[{field, cursor} | prev_cursor_field_pairs], dynamic(^this_field_comparison)}
+
+      _ ->
+        {[{field, cursor} | prev_cursor_field_pairs],
+         dynamic(^dynamic_query or ^this_field_comparison)}
+    end
   end
 
   defp field_cursor_comparison(query, order_by_field, cursor, first)
