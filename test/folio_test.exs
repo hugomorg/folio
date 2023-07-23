@@ -5,13 +5,20 @@ defmodule FolioTest do
   alias Folio.TestRepo
   import Ecto.Query
 
+  @bruce_banner %{first_name: "Bruce", last_name: "Banner", alternate_selves: 1}
+  @natasha_romanoff %{first_name: "Natasha", last_name: "Romanoff", alternate_selves: 0}
+  @bruce_wayne %{first_name: "Bruce", last_name: "Wayne", alternate_selves: 1}
+  @thor %{first_name: "Thor", last_name: "Odinson", alternate_selves: 0}
+  @tony_stark %{first_name: "Tony", last_name: "Stark", alternate_selves: 1}
+  @wanda_maximoff %{first_name: "Wanda", last_name: "Maximoff", alternate_selves: 1}
+
   @people [
-    %{first_name: "Bruce", last_name: "Banner", alternate_selves: 1},
-    %{first_name: "Bruce", last_name: "Wayne", alternate_selves: 1},
-    %{first_name: "Natasha", last_name: "Romanoff", alternate_selves: 0},
-    %{first_name: "Thor", last_name: "Odinson", alternate_selves: 0},
-    %{first_name: "Tony", last_name: "Stark", alternate_selves: 1},
-    %{first_name: "Wanda", last_name: "Maximoff", alternate_selves: 1}
+    @bruce_banner,
+    @natasha_romanoff,
+    @bruce_wayne,
+    @thor,
+    @tony_stark,
+    @wanda_maximoff
   ]
 
   setup do
@@ -42,6 +49,36 @@ defmodule FolioTest do
       stream = Folio.page(TestRepo, Superhero, mode: :cursor, order_by: :last_name)
       assert [results] = get_results(stream)
       assert results == Enum.sort_by(people, & &1.last_name)
+    end
+
+    test "cursor-based pagination - order_by option - desc direction", %{people: people} do
+      stream = Folio.page(TestRepo, Superhero, mode: :cursor, order_by: {:desc, :last_name})
+
+      assert [results] = get_results(stream)
+      assert results == Enum.sort_by(people, & &1.last_name, :desc)
+
+      stream = Folio.page(TestRepo, Superhero, mode: :cursor, order_by: [desc: :last_name])
+
+      assert [results] = get_results(stream)
+      assert results == Enum.sort_by(people, & &1.last_name, :desc)
+    end
+
+    test "cursor-based pagination - order_by option - 2 cursors 2 directions" do
+      stream =
+        Folio.page(TestRepo, Superhero,
+          mode: :cursor,
+          order_by: [:first_name, desc: :last_name],
+          batch_size: 1
+        )
+
+      assert get_results(stream) == [
+               [@bruce_wayne],
+               [@bruce_banner],
+               [@natasha_romanoff],
+               [@thor],
+               [@tony_stark],
+               [@wanda_maximoff]
+             ]
     end
   end
 
