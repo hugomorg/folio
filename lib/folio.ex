@@ -9,6 +9,10 @@ defmodule Folio do
 
   import Ecto.Query
 
+  defmodule FolioError do
+    defexception [:message]
+  end
+
   def page(repo, schema, opts \\ [])
 
   def page(repo, schema, opts) when is_list(opts) do
@@ -19,16 +23,16 @@ defmodule Folio do
     create_stream(repo, schema, build_opts(repo, schema, opts))
   end
 
-  defp build_opts(_repo, _schema, opts = %{mode: :offset}) do
+  defp build_opts(_repo, schema, opts = %{mode: :offset}) do
     batch_size = Map.get(opts, :batch_size, 100)
     offset = Map.get(opts, :offset, 0)
-    order_by = Map.get(opts, :order_by, :id)
+    order_by = Map.get(opts, :order_by, get_primary_key!(schema))
     %{batch_size: batch_size, offset: offset, mode: :offset, order_by: order_by}
   end
 
   defp build_opts(repo, schema, opts = %{mode: :cursor}) do
     batch_size = Map.get(opts, :batch_size, 100)
-    order_by = Map.get(opts, :order_by, :id)
+    order_by = Map.get(opts, :order_by, get_primary_key!(schema))
 
     cursor =
       Map.get_lazy(opts, :cursor, fn ->
@@ -41,6 +45,19 @@ defmodule Folio do
     # Track that this is the first request so that we include the initial cursor
     # but subsequent pages should fetch after the cursor (exclusive)
     %{batch_size: batch_size, mode: :cursor, order_by: order_by, cursor: cursor, first: true}
+  end
+
+  defp get_primary_key!(schema) do
+    case schema.__schema__(:primary_key) do
+      [] ->
+        raise __MODULE__.FolioError,
+          message:
+            "Please specify a cursor field - your schema #{inspect(schema)}" <>
+              " doesn't have a primary key to fall back on"
+
+      pk ->
+        pk
+    end
   end
 
   defp normalise_order_by(order_by) when is_list(order_by) do

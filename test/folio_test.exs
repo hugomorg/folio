@@ -1,6 +1,7 @@
 defmodule FolioTest do
   use Folio.DataCase
   # doctest Folio
+  alias Folio.Schemas.Dog
   alias Folio.Schemas.Superhero
   alias Folio.TestRepo
   import Ecto.Query
@@ -92,6 +93,14 @@ defmodule FolioTest do
 
       assert get_results(stream) == [[@tony_stark, @wanda_maximoff]]
     end
+
+    test "not specifying cursor when table does not have primary key raises" do
+      TestRepo.insert_all(Dog, [%{breed: "Bull Terrier", name: "Fido"}])
+
+      assert_raise Folio.FolioError, fn ->
+        Folio.page(TestRepo, Dog, mode: :cursor)
+      end
+    end
   end
 
   describe "mode - offset" do
@@ -116,6 +125,14 @@ defmodule FolioTest do
       stream = Folio.page(TestRepo, Superhero, mode: :offset, order_by: :last_name)
       assert [results] = get_results(stream)
       assert results == Enum.sort_by(people, & &1.last_name)
+    end
+
+    test "not specifying cursor when table does not have primary key raises" do
+      TestRepo.insert_all(Dog, [%{breed: "Bull Terrier", name: "Fido"}])
+
+      assert_raise Folio.FolioError, fn ->
+        Folio.page(TestRepo, Dog, mode: :offset)
+      end
     end
   end
 
