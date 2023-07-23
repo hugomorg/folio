@@ -35,22 +35,24 @@ defmodule Folio do
         get_default_cursor(repo, schema, order_by)
       end)
 
-    order_by =
-      case order_by do
-        {dir, field} -> [{dir, field}]
-        order_by -> order_by
-      end
-
-    cursor =
-      if is_list(order_by) do
-        List.wrap(cursor)
-      else
-        cursor
-      end
+    order_by = order_by |> normalise_order_by() |> List.wrap()
+    cursor = List.wrap(cursor)
 
     # Track that this is the first request so that we include the initial cursor
     # but subsequent pages should fetch after the cursor (exclusive)
     %{batch_size: batch_size, mode: :cursor, order_by: order_by, cursor: cursor, first: true}
+  end
+
+  defp normalise_order_by(order_by) when is_list(order_by) do
+    Enum.map(order_by, &normalise_order_by/1)
+  end
+
+  defp normalise_order_by({dir, field}) do
+    {dir, field}
+  end
+
+  defp normalise_order_by(field) do
+    {:asc, field}
   end
 
   defp create_stream(repo, schema, initial_params) do
@@ -97,16 +99,6 @@ defmodule Folio do
     |> order_by(^order_by)
   end
 
-  defp build_cursor_where_query(query, %{first: true, cursor: cursor, order_by: order_by})
-       when is_atom(order_by) do
-    where(query, [el], field(el, ^order_by) >= ^cursor)
-  end
-
-  defp build_cursor_where_query(query, %{cursor: cursor, order_by: order_by})
-       when is_atom(order_by) do
-    where(query, [el], field(el, ^order_by) > ^cursor)
-  end
-
   # The main idea here is that we want to get the next results after
   # the current cursor, but if the first n fields match then we want to try
   # the next cursor field, and if that is equal to any given row, then
@@ -128,13 +120,8 @@ defmodule Folio do
 
   defp build_multi_cursor_query({field, cursor}, {prev_cursor_field_pairs, dynamic_query}, first) do
     matching_fields_query =
-      Enum.reduce(prev_cursor_field_pairs, dynamic(true), fn {field, cursor}, dynamic_query ->
-        field =
-          case field do
-            {_direction, field} -> field
-            field -> field
-          end
-
+      Enum.reduce(prev_cursor_field_pairs, dynamic(true), fn {{_direction, field}, cursor},
+                                                             dynamic_query ->
         dynamic([el], ^dynamic_query and field(el, ^field) == ^cursor)
       end)
 
@@ -150,11 +137,6 @@ defmodule Folio do
         {[{field, cursor} | prev_cursor_field_pairs],
          dynamic(^dynamic_query or ^this_field_comparison)}
     end
-  end
-
-  defp field_cursor_comparison(query, order_by_field, cursor, first)
-       when is_atom(order_by_field) do
-    field_cursor_comparison(query, {:asc, order_by_field}, cursor, first)
   end
 
   defp field_cursor_comparison(d, {:asc, field}, cursor, true) do
@@ -206,10 +188,6 @@ defmodule Folio do
 
   defp get_default_cursor(repo, schema, {:desc, cursor_field}) do
     schema |> select([el], max(field(el, ^cursor_field))) |> repo.one!
-  end
-
-  defp get_default_cursor(repo, schema, cursor_field) when is_atom(cursor_field) do
-    get_default_cursor(repo, schema, {:asc, cursor_field})
   end
 
   defp get_default_cursor(repo, schema, cursor_fields) do
