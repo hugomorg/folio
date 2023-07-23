@@ -1,5 +1,5 @@
 defmodule FolioTest do
-  use ExUnit.Case
+  use Folio.DataCase
   # doctest Folio
   alias Folio.Schemas.Superhero
   alias Folio.TestRepo

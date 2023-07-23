@@ -1,4 +1,4 @@
-defmodule Folio.RepoCase do
+defmodule Folio.DataCase do
   use ExUnit.CaseTemplate
 
   alias Ecto.Adapters.SQL.Sandbox
