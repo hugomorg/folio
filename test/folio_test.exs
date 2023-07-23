@@ -54,13 +54,14 @@ defmodule FolioTest do
     test "cursor-based pagination - order_by option - desc direction", %{people: people} do
       stream = Folio.page(TestRepo, Superhero, mode: :cursor, order_by: {:desc, :last_name})
 
+      sorted_by_last_name = Enum.sort_by(people, & &1.last_name, :desc)
       assert [results] = get_results(stream)
-      assert results == Enum.sort_by(people, & &1.last_name, :desc)
+      assert results == sorted_by_last_name
 
       stream = Folio.page(TestRepo, Superhero, mode: :cursor, order_by: [desc: :last_name])
 
       assert [results] = get_results(stream)
-      assert results == Enum.sort_by(people, & &1.last_name, :desc)
+      assert results == sorted_by_last_name
     end
 
     test "cursor-based pagination - order_by option - 2 cursors 2 directions" do
