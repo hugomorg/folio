@@ -81,6 +81,17 @@ defmodule FolioTest do
                [@wanda_maximoff]
              ]
     end
+
+    test "cursor-based pagination - order_by option - cursor specified" do
+      stream =
+        Folio.page(TestRepo, Superhero,
+          mode: :cursor,
+          order_by: [:first_name],
+          cursor: "Tony"
+        )
+
+      assert get_results(stream) == [[@tony_stark, @wanda_maximoff]]
+    end
   end
 
   describe "mode - offset" do
