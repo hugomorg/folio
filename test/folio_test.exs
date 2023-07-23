@@ -101,6 +101,43 @@ defmodule FolioTest do
         Folio.page(TestRepo, Dog, mode: :cursor)
       end
     end
+
+    test "select multiple fields as struct", %{people: people} do
+      first_names =
+        Enum.map(people, fn person ->
+          Map.drop(%Superhero{first_name: person.first_name}, [:__meta__])
+        end)
+
+      stream =
+        Folio.page(TestRepo, Superhero, mode: :cursor, select: [:first_name], select_as_map: false)
+
+      [results] = Enum.to_list(stream)
+      assert Enum.map(results, &Map.drop(&1, [:__meta__])) == first_names
+    end
+
+    test "select multiple fields as map (default)", %{people: people} do
+      first_names =
+        Enum.map(people, fn person ->
+          %{first_name: person.first_name}
+        end)
+
+      stream = Folio.page(TestRepo, Superhero, mode: :cursor, select: [:first_name])
+
+      [results] = Enum.to_list(stream)
+      assert results == first_names
+    end
+
+    test "select single field", %{people: people} do
+      first_names =
+        Enum.map(people, fn person ->
+          person.first_name
+        end)
+
+      stream = Folio.page(TestRepo, Superhero, mode: :cursor, select: :first_name)
+
+      [results] = Enum.to_list(stream)
+      assert results == first_names
+    end
   end
 
   describe "mode - offset" do
@@ -133,6 +170,43 @@ defmodule FolioTest do
       assert_raise Folio.FolioError, fn ->
         Folio.page(TestRepo, Dog, mode: :offset)
       end
+    end
+
+    test "select multiple fields as struct", %{people: people} do
+      first_names =
+        Enum.map(people, fn person ->
+          Map.drop(%Superhero{first_name: person.first_name}, [:__meta__])
+        end)
+
+      stream =
+        Folio.page(TestRepo, Superhero, mode: :offset, select: [:first_name], select_as_map: false)
+
+      [results] = Enum.to_list(stream)
+      assert Enum.map(results, &Map.drop(&1, [:__meta__])) == first_names
+    end
+
+    test "select multiple fields as map (default)", %{people: people} do
+      first_names =
+        Enum.map(people, fn person ->
+          %{first_name: person.first_name}
+        end)
+
+      stream = Folio.page(TestRepo, Superhero, mode: :offset, select: [:first_name])
+
+      [results] = Enum.to_list(stream)
+      assert results == first_names
+    end
+
+    test "select single field", %{people: people} do
+      first_names =
+        Enum.map(people, fn person ->
+          person.first_name
+        end)
+
+      stream = Folio.page(TestRepo, Superhero, mode: :offset, select: :first_name)
+
+      [results] = Enum.to_list(stream)
+      assert results == first_names
     end
   end
 
