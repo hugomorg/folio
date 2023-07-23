@@ -54,18 +54,24 @@ defmodule Folio do
   end
 
   defp create_stream(repo, schema, initial_params) do
-    Stream.unfold(initial_params, fn params ->
-      results = schema |> build_query(params) |> repo.all
+    Stream.unfold(initial_params, &run_stream(repo, schema, &1))
+  end
 
-      case results do
-        [] ->
-          nil
+  defp run_stream(_repo, _schema, :done), do: nil
 
-        results ->
-          next_params = build_next_params(results, params)
-          {results, next_params}
-      end
-    end)
+  defp run_stream(repo, schema, params) do
+    schema |> build_query(params) |> repo.all |> handle_results(params)
+  end
+
+  defp handle_results([], _params), do: nil
+
+  defp handle_results(results, params) do
+    if length(results) < params.batch_size do
+      {results, :done}
+    else
+      next_params = build_next_params(results, params)
+      {results, next_params}
+    end
   end
 
   defp build_query(schema, %{
