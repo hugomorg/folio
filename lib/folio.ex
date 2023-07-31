@@ -26,7 +26,12 @@ defmodule Folio do
   defp build_opts(_repo, schema, opts = %{mode: :offset}) do
     batch_size = Map.get(opts, :batch_size, 100)
     offset = Map.get(opts, :offset, 0)
-    order_by = Map.get(opts, :order_by, get_primary_key!(schema))
+
+    order_by =
+      Map.get_lazy(opts, :order_by, fn ->
+        get_primary_key!(schema)
+      end)
+
     fields_to_select = Map.get(opts, :select)
     select_as_map = Map.get(opts, :select_as_map, true)
 
@@ -42,7 +47,11 @@ defmodule Folio do
 
   defp build_opts(repo, schema, opts = %{mode: :cursor}) do
     batch_size = Map.get(opts, :batch_size, 100)
-    order_by = Map.get(opts, :order_by, get_primary_key!(schema))
+
+    order_by =
+      Map.get_lazy(opts, :order_by, fn ->
+        get_primary_key!(schema)
+      end)
 
     cursor =
       Map.get_lazy(opts, :cursor, fn ->
@@ -68,12 +77,17 @@ defmodule Folio do
     }
   end
 
+  defp get_primary_key!(%Ecto.Query{}) do
+    raise __MODULE__.FolioError,
+      message: "Please specify an order_by field when using a query"
+  end
+
   defp get_primary_key!(schema) do
     case schema.__schema__(:primary_key) do
       [] ->
         raise __MODULE__.FolioError,
           message:
-            "Please specify a cursor field - your schema #{inspect(schema)}" <>
+            "Please specify an order_by field - your schema #{inspect(schema)}" <>
               " doesn't have a primary key to fall back on"
 
       pk ->

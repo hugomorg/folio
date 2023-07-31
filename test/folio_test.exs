@@ -138,6 +138,12 @@ defmodule FolioTest do
       [results] = Enum.to_list(stream)
       assert results == first_names
     end
+
+    test "with query instead of schema", %{people: people} do
+      stream = Folio.page(TestRepo, from(s in Superhero), mode: :cursor, order_by: :id)
+      assert [results] = get_results(stream)
+      assert results == people
+    end
   end
 
   describe "mode - offset" do
@@ -207,6 +213,12 @@ defmodule FolioTest do
 
       [results] = Enum.to_list(stream)
       assert results == first_names
+    end
+
+    test "with query instead of schema", %{people: people} do
+      stream = Folio.page(TestRepo, from(s in Superhero), mode: :offset, order_by: :id)
+      assert [results] = get_results(stream)
+      assert results == people
     end
   end
 
