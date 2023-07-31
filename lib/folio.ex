@@ -13,23 +13,23 @@ defmodule Folio do
     defexception [:message]
   end
 
-  def page(schema, repo, opts \\ [])
+  def page(query, repo, opts \\ [])
 
-  def page(schema, repo, opts) when is_list(opts) do
-    page(schema, repo, Map.new(opts))
+  def page(query, repo, opts) when is_list(opts) do
+    page(query, repo, Map.new(opts))
   end
 
-  def page(schema, repo, opts) do
-    create_stream(schema, repo, build_opts(schema, repo, opts))
+  def page(query, repo, opts) do
+    create_stream(query, repo, build_opts(query, repo, opts))
   end
 
-  defp build_opts(schema, _repo, opts = %{mode: :offset}) do
+  defp build_opts(query, _repo, opts = %{mode: :offset}) do
     batch_size = Map.get(opts, :batch_size, 100)
     offset = Map.get(opts, :offset, 0)
 
     order_by =
       Map.get_lazy(opts, :order_by, fn ->
-        get_primary_key!(schema)
+        get_primary_key!(query)
       end)
 
     fields_to_select = Map.get(opts, :select)
@@ -45,17 +45,17 @@ defmodule Folio do
     }
   end
 
-  defp build_opts(schema, repo, opts = %{mode: :cursor}) do
+  defp build_opts(query, repo, opts = %{mode: :cursor}) do
     batch_size = Map.get(opts, :batch_size, 100)
 
     order_by =
       Map.get_lazy(opts, :order_by, fn ->
-        get_primary_key!(schema)
+        get_primary_key!(query)
       end)
 
     cursor =
       Map.get_lazy(opts, :cursor, fn ->
-        get_default_cursor(repo, schema, order_by)
+        get_default_cursor(repo, query, order_by)
       end)
 
     order_by = order_by |> normalise_order_by() |> List.wrap()
@@ -107,14 +107,14 @@ defmodule Folio do
     {:asc, field}
   end
 
-  defp create_stream(schema, repo, initial_params) do
-    Stream.unfold(initial_params, &run_stream(schema, repo, &1))
+  defp create_stream(query, repo, initial_params) do
+    Stream.unfold(initial_params, &run_stream(query, repo, &1))
   end
 
-  defp run_stream(_schema, _repo, :done), do: nil
+  defp run_stream(_query, _repo, :done), do: nil
 
-  defp run_stream(schema, repo, params) do
-    schema |> build_query(params) |> repo.all |> handle_results(params)
+  defp run_stream(query, repo, params) do
+    query |> build_query(params) |> repo.all |> handle_results(params)
   end
 
   defp handle_results([], _params), do: nil
@@ -128,7 +128,7 @@ defmodule Folio do
     end
   end
 
-  defp build_query(schema, %{
+  defp build_query(query, %{
          mode: :offset,
          batch_size: batch_size,
          order_by: order_by,
@@ -136,7 +136,7 @@ defmodule Folio do
          fields_to_select: fields_to_select,
          select_as_map: select_as_map
        }) do
-    schema
+    query
     |> limit(^batch_size)
     |> offset(^offset)
     |> order_by(^order_by)
@@ -144,7 +144,7 @@ defmodule Folio do
   end
 
   defp build_query(
-         schema,
+         query,
          opts = %{
            mode: :cursor,
            batch_size: batch_size,
@@ -153,7 +153,7 @@ defmodule Folio do
            select_as_map: select_as_map
          }
        ) do
-    schema
+    query
     |> limit(^batch_size)
     |> build_cursor_where_query(opts)
     |> maybe_select_fields(fields_to_select, select_as_map)
@@ -258,15 +258,15 @@ defmodule Folio do
     Map.fetch!(last, order_by)
   end
 
-  defp get_default_cursor(repo, schema, {:asc, cursor_field}) do
-    schema |> select([el], min(field(el, ^cursor_field))) |> repo.one!
+  defp get_default_cursor(repo, query, {:asc, cursor_field}) do
+    query |> select([el], min(field(el, ^cursor_field))) |> repo.one!
   end
 
-  defp get_default_cursor(repo, schema, {:desc, cursor_field}) do
-    schema |> select([el], max(field(el, ^cursor_field))) |> repo.one!
+  defp get_default_cursor(repo, query, {:desc, cursor_field}) do
+    query |> select([el], max(field(el, ^cursor_field))) |> repo.one!
   end
 
-  defp get_default_cursor(repo, schema, cursor_fields) do
-    schema |> order_by(^cursor_fields) |> limit(1) |> repo.one! |> next_cursor(cursor_fields)
+  defp get_default_cursor(repo, query, cursor_fields) do
+    query |> order_by(^cursor_fields) |> limit(1) |> repo.one! |> next_cursor(cursor_fields)
   end
 end
