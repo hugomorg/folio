@@ -36,30 +36,30 @@ defmodule FolioTest do
 
   describe "mode - cursor" do
     test "cursor-based pagination - defaults", %{people: people} do
-      stream = Folio.page(TestRepo, Superhero, mode: :cursor)
+      stream = Folio.page(Superhero, TestRepo, mode: :cursor)
       assert [results] = get_results(stream)
       assert results == people
     end
 
     test "cursor-based pagination - batch_size option", %{people: people} do
-      stream = Folio.page(TestRepo, Superhero, mode: :cursor, batch_size: 2)
+      stream = Folio.page(Superhero, TestRepo, mode: :cursor, batch_size: 2)
       assert get_results(stream) == Enum.chunk_every(people, 2)
     end
 
     test "cursor-based pagination - order_by option", %{people: people} do
-      stream = Folio.page(TestRepo, Superhero, mode: :cursor, order_by: :last_name)
+      stream = Folio.page(Superhero, TestRepo, mode: :cursor, order_by: :last_name)
       assert [results] = get_results(stream)
       assert results == Enum.sort_by(people, & &1.last_name)
     end
 
     test "cursor-based pagination - order_by option - desc direction", %{people: people} do
-      stream = Folio.page(TestRepo, Superhero, mode: :cursor, order_by: {:desc, :last_name})
+      stream = Folio.page(Superhero, TestRepo, mode: :cursor, order_by: {:desc, :last_name})
 
       sorted_by_last_name = Enum.sort_by(people, & &1.last_name, :desc)
       assert [results] = get_results(stream)
       assert results == sorted_by_last_name
 
-      stream = Folio.page(TestRepo, Superhero, mode: :cursor, order_by: [desc: :last_name])
+      stream = Folio.page(Superhero, TestRepo, mode: :cursor, order_by: [desc: :last_name])
 
       assert [results] = get_results(stream)
       assert results == sorted_by_last_name
@@ -67,7 +67,7 @@ defmodule FolioTest do
 
     test "cursor-based pagination - order_by option - 2 cursors 2 directions" do
       stream =
-        Folio.page(TestRepo, Superhero,
+        Folio.page(Superhero, TestRepo,
           mode: :cursor,
           order_by: [:first_name, desc: :last_name],
           batch_size: 1
@@ -85,7 +85,7 @@ defmodule FolioTest do
 
     test "cursor-based pagination - order_by option - cursor specified" do
       stream =
-        Folio.page(TestRepo, Superhero,
+        Folio.page(Superhero, TestRepo,
           mode: :cursor,
           order_by: [:first_name],
           cursor: "Tony"
@@ -98,7 +98,7 @@ defmodule FolioTest do
       TestRepo.insert_all(Dog, [%{breed: "Bull Terrier", name: "Fido"}])
 
       assert_raise Folio.FolioError, fn ->
-        Folio.page(TestRepo, Dog, mode: :cursor)
+        Folio.page(Dog, TestRepo, mode: :cursor)
       end
     end
 
@@ -109,7 +109,7 @@ defmodule FolioTest do
         end)
 
       stream =
-        Folio.page(TestRepo, Superhero, mode: :cursor, select: [:first_name], select_as_map: false)
+        Folio.page(Superhero, TestRepo, mode: :cursor, select: [:first_name], select_as_map: false)
 
       [results] = Enum.to_list(stream)
       assert Enum.map(results, &Map.drop(&1, [:__meta__])) == first_names
@@ -121,7 +121,7 @@ defmodule FolioTest do
           %{first_name: person.first_name}
         end)
 
-      stream = Folio.page(TestRepo, Superhero, mode: :cursor, select: [:first_name])
+      stream = Folio.page(Superhero, TestRepo, mode: :cursor, select: [:first_name])
 
       [results] = Enum.to_list(stream)
       assert results == first_names
@@ -133,14 +133,14 @@ defmodule FolioTest do
           person.first_name
         end)
 
-      stream = Folio.page(TestRepo, Superhero, mode: :cursor, select: :first_name)
+      stream = Folio.page(Superhero, TestRepo, mode: :cursor, select: :first_name)
 
       [results] = Enum.to_list(stream)
       assert results == first_names
     end
 
     test "with query instead of schema", %{people: people} do
-      stream = Folio.page(TestRepo, from(s in Superhero), mode: :cursor, order_by: :id)
+      stream = Folio.page(from(s in Superhero), TestRepo, mode: :cursor, order_by: :id)
       assert [results] = get_results(stream)
       assert results == people
     end
@@ -148,24 +148,24 @@ defmodule FolioTest do
 
   describe "mode - offset" do
     test "offset based pagination - defaults", %{people: people} do
-      stream = Folio.page(TestRepo, Superhero, mode: :offset)
+      stream = Folio.page(Superhero, TestRepo, mode: :offset)
       assert [results] = get_results(stream)
       assert results == people
     end
 
     test "offset based pagination - batch_size option", %{people: people} do
-      stream = Folio.page(TestRepo, Superhero, mode: :offset, batch_size: 2)
+      stream = Folio.page(Superhero, TestRepo, mode: :offset, batch_size: 2)
       assert get_results(stream) == Enum.chunk_every(people, 2)
     end
 
     test "offset based pagination - offset option", %{people: people} do
-      stream = Folio.page(TestRepo, Superhero, mode: :offset, offset: length(people) - 1)
+      stream = Folio.page(Superhero, TestRepo, mode: :offset, offset: length(people) - 1)
       assert [results] = get_results(stream)
       assert results == [List.last(people)]
     end
 
     test "offset based pagination - order_by option", %{people: people} do
-      stream = Folio.page(TestRepo, Superhero, mode: :offset, order_by: :last_name)
+      stream = Folio.page(Superhero, TestRepo, mode: :offset, order_by: :last_name)
       assert [results] = get_results(stream)
       assert results == Enum.sort_by(people, & &1.last_name)
     end
@@ -174,7 +174,7 @@ defmodule FolioTest do
       TestRepo.insert_all(Dog, [%{breed: "Bull Terrier", name: "Fido"}])
 
       assert_raise Folio.FolioError, fn ->
-        Folio.page(TestRepo, Dog, mode: :offset)
+        Folio.page(Dog, TestRepo, mode: :offset)
       end
     end
 
@@ -185,7 +185,7 @@ defmodule FolioTest do
         end)
 
       stream =
-        Folio.page(TestRepo, Superhero, mode: :offset, select: [:first_name], select_as_map: false)
+        Folio.page(Superhero, TestRepo, mode: :offset, select: [:first_name], select_as_map: false)
 
       [results] = Enum.to_list(stream)
       assert Enum.map(results, &Map.drop(&1, [:__meta__])) == first_names
@@ -197,7 +197,7 @@ defmodule FolioTest do
           %{first_name: person.first_name}
         end)
 
-      stream = Folio.page(TestRepo, Superhero, mode: :offset, select: [:first_name])
+      stream = Folio.page(Superhero, TestRepo, mode: :offset, select: [:first_name])
 
       [results] = Enum.to_list(stream)
       assert results == first_names
@@ -209,14 +209,14 @@ defmodule FolioTest do
           person.first_name
         end)
 
-      stream = Folio.page(TestRepo, Superhero, mode: :offset, select: :first_name)
+      stream = Folio.page(Superhero, TestRepo, mode: :offset, select: :first_name)
 
       [results] = Enum.to_list(stream)
       assert results == first_names
     end
 
     test "with query instead of schema", %{people: people} do
-      stream = Folio.page(TestRepo, from(s in Superhero), mode: :offset, order_by: :id)
+      stream = Folio.page(from(s in Superhero), TestRepo, mode: :offset, order_by: :id)
       assert [results] = get_results(stream)
       assert results == people
     end

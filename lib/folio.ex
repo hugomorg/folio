@@ -13,17 +13,17 @@ defmodule Folio do
     defexception [:message]
   end
 
-  def page(repo, schema, opts \\ [])
+  def page(schema, repo, opts \\ [])
 
-  def page(repo, schema, opts) when is_list(opts) do
-    page(repo, schema, Map.new(opts))
+  def page(schema, repo, opts) when is_list(opts) do
+    page(schema, repo, Map.new(opts))
   end
 
-  def page(repo, schema, opts) do
-    create_stream(repo, schema, build_opts(repo, schema, opts))
+  def page(schema, repo, opts) do
+    create_stream(schema, repo, build_opts(schema, repo, opts))
   end
 
-  defp build_opts(_repo, schema, opts = %{mode: :offset}) do
+  defp build_opts(schema, _repo, opts = %{mode: :offset}) do
     batch_size = Map.get(opts, :batch_size, 100)
     offset = Map.get(opts, :offset, 0)
 
@@ -45,7 +45,7 @@ defmodule Folio do
     }
   end
 
-  defp build_opts(repo, schema, opts = %{mode: :cursor}) do
+  defp build_opts(schema, repo, opts = %{mode: :cursor}) do
     batch_size = Map.get(opts, :batch_size, 100)
 
     order_by =
@@ -107,13 +107,13 @@ defmodule Folio do
     {:asc, field}
   end
 
-  defp create_stream(repo, schema, initial_params) do
-    Stream.unfold(initial_params, &run_stream(repo, schema, &1))
+  defp create_stream(schema, repo, initial_params) do
+    Stream.unfold(initial_params, &run_stream(schema, repo, &1))
   end
 
-  defp run_stream(_repo, _schema, :done), do: nil
+  defp run_stream(_schema, _repo, :done), do: nil
 
-  defp run_stream(repo, schema, params) do
+  defp run_stream(schema, repo, params) do
     schema |> build_query(params) |> repo.all |> handle_results(params)
   end
 
