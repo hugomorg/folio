@@ -102,43 +102,6 @@ defmodule FolioTest do
       end
     end
 
-    test "select multiple fields as struct", %{people: people} do
-      first_names =
-        Enum.map(people, fn person ->
-          Map.drop(%Superhero{first_name: person.first_name}, [:__meta__])
-        end)
-
-      stream =
-        Folio.page(Superhero, TestRepo, mode: :cursor, select: [:first_name], select_as_map: false)
-
-      [results] = Enum.to_list(stream)
-      assert Enum.map(results, &Map.drop(&1, [:__meta__])) == first_names
-    end
-
-    test "select multiple fields as map (default)", %{people: people} do
-      first_names =
-        Enum.map(people, fn person ->
-          %{first_name: person.first_name}
-        end)
-
-      stream = Folio.page(Superhero, TestRepo, mode: :cursor, select: [:first_name])
-
-      [results] = Enum.to_list(stream)
-      assert results == first_names
-    end
-
-    test "select single field", %{people: people} do
-      first_names =
-        Enum.map(people, fn person ->
-          person.first_name
-        end)
-
-      stream = Folio.page(Superhero, TestRepo, mode: :cursor, select: :first_name)
-
-      [results] = Enum.to_list(stream)
-      assert results == first_names
-    end
-
     test "with query instead of schema", %{people: people} do
       stream = Folio.page(from(s in Superhero), TestRepo, mode: :cursor, order_by: :id)
       assert [results] = get_results(stream)
@@ -176,43 +139,6 @@ defmodule FolioTest do
       assert_raise Folio.FolioError, fn ->
         Folio.page(Dog, TestRepo, mode: :offset)
       end
-    end
-
-    test "select multiple fields as struct", %{people: people} do
-      first_names =
-        Enum.map(people, fn person ->
-          Map.drop(%Superhero{first_name: person.first_name}, [:__meta__])
-        end)
-
-      stream =
-        Folio.page(Superhero, TestRepo, mode: :offset, select: [:first_name], select_as_map: false)
-
-      [results] = Enum.to_list(stream)
-      assert Enum.map(results, &Map.drop(&1, [:__meta__])) == first_names
-    end
-
-    test "select multiple fields as map (default)", %{people: people} do
-      first_names =
-        Enum.map(people, fn person ->
-          %{first_name: person.first_name}
-        end)
-
-      stream = Folio.page(Superhero, TestRepo, mode: :offset, select: [:first_name])
-
-      [results] = Enum.to_list(stream)
-      assert results == first_names
-    end
-
-    test "select single field", %{people: people} do
-      first_names =
-        Enum.map(people, fn person ->
-          person.first_name
-        end)
-
-      stream = Folio.page(Superhero, TestRepo, mode: :offset, select: :first_name)
-
-      [results] = Enum.to_list(stream)
-      assert results == first_names
     end
 
     test "with query instead of schema", %{people: people} do

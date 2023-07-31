@@ -32,16 +32,11 @@ defmodule Folio do
         get_primary_key!(query)
       end)
 
-    fields_to_select = Map.get(opts, :select)
-    select_as_map = Map.get(opts, :select_as_map, true)
-
     %{
       batch_size: batch_size,
       offset: offset,
       mode: :offset,
-      order_by: order_by,
-      fields_to_select: fields_to_select,
-      select_as_map: select_as_map
+      order_by: order_by
     }
   end
 
@@ -61,9 +56,6 @@ defmodule Folio do
     order_by = order_by |> normalise_order_by() |> List.wrap()
     cursor = List.wrap(cursor)
 
-    fields_to_select = Map.get(opts, :select)
-    select_as_map = Map.get(opts, :select_as_map, true)
-
     # Track that this is the first request so that we include the initial cursor
     # but subsequent pages should fetch after the cursor (exclusive)
     %{
@@ -71,9 +63,7 @@ defmodule Folio do
       mode: :cursor,
       order_by: order_by,
       cursor: cursor,
-      first: true,
-      fields_to_select: fields_to_select,
-      select_as_map: select_as_map
+      first: true
     }
   end
 
@@ -132,15 +122,12 @@ defmodule Folio do
          mode: :offset,
          batch_size: batch_size,
          order_by: order_by,
-         offset: offset,
-         fields_to_select: fields_to_select,
-         select_as_map: select_as_map
+         offset: offset
        }) do
     query
     |> limit(^batch_size)
     |> offset(^offset)
     |> order_by(^order_by)
-    |> maybe_select_fields(fields_to_select, select_as_map)
   end
 
   defp build_query(
@@ -148,31 +135,13 @@ defmodule Folio do
          opts = %{
            mode: :cursor,
            batch_size: batch_size,
-           order_by: order_by,
-           fields_to_select: fields_to_select,
-           select_as_map: select_as_map
+           order_by: order_by
          }
        ) do
     query
     |> limit(^batch_size)
     |> build_cursor_where_query(opts)
-    |> maybe_select_fields(fields_to_select, select_as_map)
     |> order_by(^order_by)
-  end
-
-  defp maybe_select_fields(query, nil, _), do: query
-  defp maybe_select_fields(query, [], _), do: query
-
-  defp maybe_select_fields(query, fields_to_select, true) when is_list(fields_to_select) do
-    select(query, [el], map(el, ^fields_to_select))
-  end
-
-  defp maybe_select_fields(query, fields_to_select, false) when is_list(fields_to_select) do
-    select(query, ^fields_to_select)
-  end
-
-  defp maybe_select_fields(query, field, _) do
-    select(query, [el], field(el, ^field))
   end
 
   # The main idea here is that we want to get the next results after
